@@ -1,0 +1,127 @@
+-- GIFTING TOGGLE AND PLAYER SELECTION GUI --
+
+-- Ensure GUI exists
+local gui = getgenv().counter or Instance.new("ScreenGui")
+gui.Name = "InventoryCounterGUI"
+gui.ResetOnSpawn = false
+gui.Enabled = true
+gui.Parent = Player:WaitForChild("PlayerGui")
+
+-- Main frame already exists as 'frame'
+local frame = gui:FindFirstChildOfClass("Frame") or Instance.new("Frame")
+frame.Size = UDim2.new(0, 200, 0, 120) -- Increased height for buttons
+frame.Position = UDim2.new(0, 10, 0, 10)
+frame.BackgroundColor3 = Color3.fromRGB(50,50,50)
+frame.BackgroundTransparency = 0.1
+frame.BorderSizePixel = 1
+frame.BorderColor3 = Color3.fromRGB(0,255,0)
+frame.Parent = gui
+
+local corner = frame:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0,5)
+corner.Parent = frame
+
+-- Inventory Label
+local label = frame:FindFirstChildOfClass("TextLabel") or Instance.new("TextLabel")
+label.Size = UDim2.new(1, -10, 0, 30)
+label.Position = UDim2.new(0,5,0,5)
+label.BackgroundTransparency = 1
+label.TextColor3 = Color3.fromRGB(255,255,255)
+label.Font = Enum.Font.SourceSansBold
+label.TextScaled = true
+label.Text = "Inventory: 0"
+label.Parent = frame
+
+-- TOGGLE BUTTON
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(1, -10, 0, 25)
+toggleButton.Position = UDim2.new(0,5,0,40)
+toggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+toggleButton.TextColor3 = Color3.fromRGB(255,255,255)
+toggleButton.Text = "Gifting: OFF"
+toggleButton.Font = Enum.Font.SourceSansBold
+toggleButton.TextScaled = true
+toggleButton.Parent = frame
+
+-- PLAYER DROPDOWN
+local dropdownFrame = Instance.new("Frame")
+dropdownFrame.Size = UDim2.new(1, -10, 0, 25)
+dropdownFrame.Position = UDim2.new(0,5,0,70)
+dropdownFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+dropdownFrame.BorderSizePixel = 1
+dropdownFrame.Parent = frame
+
+local dropdownText = Instance.new("TextLabel")
+dropdownText.Size = UDim2.new(1,0,1,0)
+dropdownText.Position = UDim2.new(0,0,0,0)
+dropdownText.BackgroundTransparency = 1
+dropdownText.TextColor3 = Color3.fromRGB(255,255,255)
+dropdownText.Font = Enum.Font.SourceSansBold
+dropdownText.TextScaled = true
+dropdownText.Text = "Receiver: "..script_settings.receiver
+dropdownText.Parent = dropdownFrame
+
+local dropdownOpen = false
+local listFrame = Instance.new("Frame")
+listFrame.Size = UDim2.new(1,0,0,0)
+listFrame.Position = UDim2.new(0,0,1,0)
+listFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+listFrame.BorderSizePixel = 1
+listFrame.ClipsDescendants = true
+listFrame.Parent = dropdownFrame
+
+-- Function to populate player list
+local function updatePlayerList()
+    for _, child in ipairs(listFrame:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    local y = 0
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= Player then
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1,0,0,20)
+            btn.Position = UDim2.new(0,0,0,y)
+            btn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+            btn.TextColor3 = Color3.fromRGB(255,255,255)
+            btn.Text = plr.Name
+            btn.Font = Enum.Font.SourceSansBold
+            btn.TextScaled = true
+            btn.Parent = listFrame
+            y += 20
+
+            btn.MouseButton1Click:Connect(function()
+                script_settings.receiver = plr.Name
+                dropdownText.Text = "Receiver: "..plr.Name
+                dropdownOpen = false
+                listFrame:TweenSize(UDim2.new(1,0,0,0),"Out","Quad",0.3,true)
+            end)
+        end
+    end
+    listFrame.Size = UDim2.new(1,0,0,y)
+end
+
+dropdownFrame.MouseButton1Click:Connect(function()
+    dropdownOpen = not dropdownOpen
+    if dropdownOpen then
+        updatePlayerList()
+        listFrame:TweenSize(UDim2.new(1,0,0,math.min(#Players:GetPlayers()*20,100)),"Out","Quad",0.3,true)
+    else
+        listFrame:TweenSize(UDim2.new(1,0,0,0),"Out","Quad",0.3,true)
+    end
+end)
+
+-- TOGGLE LOGIC
+local giftingEnabled = false
+toggleButton.MouseButton1Click:Connect(function()
+    giftingEnabled = not giftingEnabled
+    toggleButton.Text = "Gifting: "..(giftingEnabled and "ON" or "OFF")
+end)
+
+-- MODIFY SENDER LOOP
+-- Wrap existing gifting loop with giftingEnabled check:
+if isSending then
+    local originalHeartbeat = RunService.Heartbeat:Connect(function()
+        if not giftingEnabled then return end -- Stop if gifting turned off
+        -- Original gifting logic goes here...
+    end)
+end
